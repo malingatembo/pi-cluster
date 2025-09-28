@@ -18,7 +18,7 @@
       file:
         path: /var/www/html
         state: directory
-        owner: "{{ ansible_user }}"
+        owner: www-data
         group: www-data
         mode: 0755
 
@@ -36,12 +36,10 @@
           </body>
           </html>
         dest: /var/www/html/index.html
-        owner: "{{ ansible_user }}"
+        owner: www-data
         group: www-data
         mode: 0644
 
-    - name: Ensure nginx user has access
-      user:
-        name: www-data
-        groups: "{{ ansible_user }}"
-        append: yes
+    - name: Show web server URL
+      debug:
+        msg: "Web server available at http://{{ ansible_host }}/"

@@ -1,0 +1,6 @@
+---
+- import_playbook: bootstrap.yaml
+- import_playbook: update.yaml
+- import_playbook: essential-packages.yaml
+- import_playbook: k3s-setup.yaml
+- import_playbook: webserver-setup.yaml

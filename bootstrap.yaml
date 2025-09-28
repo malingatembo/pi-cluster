@@ -1,0 +1,51 @@
+---
+- name: Bootstrap all Raspberry Pi devices
+  hosts: pi_cluster
+  become: yes
+  tasks:
+    - name: Install essential base packages
+      apt:
+        name:
+          - net-tools
+          - vim
+          - git
+          - curl
+          - wget
+        state: present
+        update_cache: yes
+
+    - name: Ensure passwordless sudo for current users
+      lineinfile:
+        path: /etc/sudoers.d/{{ ansible_user }}
+        line: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        validate: visudo -cf %s
+        mode: 0440
+
+    - name: Disable SSH password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        backup: yes
+        notify: restart ssh
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+        backup: yes
+        notify: restart ssh
+
+    - name: Ensure SSH service is running
+      systemd:
+        name: ssh
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted
