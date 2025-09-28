@@ -1,0 +1,47 @@
+---
+- name: Set up web server
+  hosts: web_server
+  become: yes
+  tasks:
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start and enable nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create web root directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: www-data
+        mode: 0755
+
+    - name: Deploy sample index.html
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>My Raspberry Pi Website</title>
+          </head>
+          <body>
+              <h1>Hello from Raspberry Pi!</h1>
+              <p>This is my test website hosted on a Raspberry Pi.</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: "{{ ansible_user }}"
+        group: www-data
+        mode: 0644
+
+    - name: Ensure nginx user has access
+      user:
+        name: www-data
+        groups: "{{ ansible_user }}"
+        append: yes

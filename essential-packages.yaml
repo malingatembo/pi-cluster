@@ -1,0 +1,37 @@
+---
+- name: Ensure essential packages are installed
+  hosts: pi_cluster
+  become: yes
+  tasks: 
+    - name: Install essential packages and k3s tools
+      ansible.builtin.apt:
+        name:
+          - vim
+          - net-tools
+          - git
+
+          #system monitoring
+          - htop
+          - tmux
+          - curl
+          - wget
+          - jq
+          - apt-transport-https
+          
+          # Network diagnostics
+          - dnsutils
+          - netcat-traditional
+          - traceroute
+
+          # Security & updates
+          - unattended-upgrades
+          - fail2ban
+
+          # Container & k3s related
+          - containerd
+          - cgroup-tools
+          - apparmor-utils
+
+        state: present
+        update_cache: yes 
+      
