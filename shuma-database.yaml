@@ -1,0 +1,207 @@
+---
+# PostgreSQL Database for Shuma Bookings
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shuma-website
+
+---
+# PostgreSQL PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shuma-postgres-pv
+  labels:
+    app: shuma-postgres
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  hostPath:
+    path: /var/lib/rancher/k3s/storage/shuma-postgres
+    type: DirectoryOrCreate
+
+---
+# PostgreSQL PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shuma-postgres-pvc
+  namespace: shuma-website
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: local-path
+
+---
+# PostgreSQL Secret (CHANGE THESE PASSWORDS!)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shuma-postgres-secret
+  namespace: shuma-website
+type: Opaque
+stringData:
+  POSTGRES_DB: shuma_bookings
+  POSTGRES_USER: shuma_admin
+  POSTGRES_PASSWORD: ChangeThisSecurePassword123!
+  ADMIN_PASSWORD: AdminSecurePassword456!
+
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shuma-postgres
+  namespace: shuma-website
+  labels:
+    app: shuma-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shuma-postgres
+  template:
+    metadata:
+      labels:
+        app: shuma-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: shuma-postgres-secret
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: shuma-postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: shuma-postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - shuma_admin
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - shuma_admin
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: shuma-postgres-pvc
+      - name: init-scripts
+        configMap:
+          name: shuma-db-init
+
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: shuma-postgres
+  namespace: shuma-website
+  labels:
+    app: shuma-postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: shuma-postgres
+
+---
+# Database Initialization Script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shuma-db-init
+  namespace: shuma-website
+data:
+  01-init.sql: |
+    -- Create bookings table
+    CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        service VARCHAR(100) NOT NULL,
+        duration INTEGER NOT NULL,
+        preferred_date DATE NOT NULL,
+        preferred_time TIME NOT NULL,
+        message TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create index for faster queries
+    CREATE INDEX idx_bookings_date ON bookings(preferred_date);
+    CREATE INDEX idx_bookings_status ON bookings(status);
+    CREATE INDEX idx_bookings_created ON bookings(created_at);
+
+    -- Create admin users table
+    CREATE TABLE IF NOT EXISTS admin_users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP
+    );
+
+    -- Create audit log table
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER REFERENCES bookings(id),
+        action VARCHAR(50) NOT NULL,
+        old_status VARCHAR(50),
+        new_status VARCHAR(50),
+        admin_user VARCHAR(100),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Grant permissions
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO shuma_admin;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO shuma_admin;
