@@ -1,0 +1,100 @@
+---
+# Production-ready Ingress for Shuma Executive Massage Parlor
+# HTTP version with security headers and rate limiting (no SSL for local testing)
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: shuma-website
+spec:
+  headers:
+    # Security Headers
+    frameDeny: true
+    browserXssFilter: true
+    contentTypeNosniff: true
+    customFrameOptionsValue: "SAMEORIGIN"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+      X-Content-Type-Options: "nosniff"
+      X-XSS-Protection: "1; mode=block"
+      Referrer-Policy: "strict-origin-when-cross-origin"
+      Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+    # Content Security Policy
+    contentSecurityPolicy: |
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+      font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+      img-src 'self' data: https:;
+      connect-src 'self';
+      frame-ancestors 'self';
+      base-uri 'self';
+      form-action 'self';
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  namespace: shuma-website
+spec:
+  rateLimit:
+    average: 100
+    burst: 50
+    period: 1m
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: compress
+  namespace: shuma-website
+spec:
+  compress: {}
+
+---
+# Strip /shuma prefix middleware
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-shuma-prefix
+  namespace: shuma-website
+spec:
+  stripPrefix:
+    prefixes:
+      - /shuma
+
+---
+# HTTP Ingress with security features
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shuma-website-secure
+  namespace: shuma-website
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: shuma-website-strip-shuma-prefix@kubernetescrd,shuma-website-security-headers@kubernetescrd,shuma-website-rate-limit@kubernetescrd,shuma-website-compress@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: shuma.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: shuma-website-service
+            port:
+              number: 80
+  # Also accept traffic without host (direct IP access)
+  - http:
+      paths:
+      - path: /shuma
+        pathType: Prefix
+        backend:
+          service:
+            name: shuma-website-service
+            port:
+              number: 80
