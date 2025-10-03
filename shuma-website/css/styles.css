@@ -1,7 +1,7 @@
 /* ===================================
    SHUMA EXECUTIVE MASSAGE PARLOR
    Premium Website Styles
-   Color Theme: Burgundy & Navy Blue
+   Color Theme: Sage Green & Gold (Natural Luxury)
    =================================== */
 
 /* ===================================
@@ -9,16 +9,16 @@
    =================================== */
 :root {
     /* Primary Colors */
-    --burgundy: #8B0000;
-    --navy: #001F3F;
-    --gold: #D4AF37;
-    --cream: #F5F5F5;
+    --burgundy: #4A6741;        /* Deep Sage Green (was burgundy) */
+    --navy: #2D5016;            /* Forest Green (was navy) */
+    --gold: #C9A961;            /* Rich Warm Gold */
+    --cream: #F5F1E8;           /* Warm Cream */
 
     /* Shades */
-    --burgundy-dark: #660000;
-    --burgundy-light: #A52A2A;
-    --navy-dark: #001529;
-    --navy-light: #003366;
+    --burgundy-dark: #3A5231;   /* Darker Sage */
+    --burgundy-light: #5D7A52;  /* Lighter Sage */
+    --navy-dark: #1F3A0F;       /* Deep Forest */
+    --navy-light: #3D6622;      /* Bright Forest */
 
     /* Neutral Colors */
     --white: #FFFFFF;

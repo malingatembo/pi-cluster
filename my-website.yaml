@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-website
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-website
+  template:
+    metadata:
+      labels:
+        app: my-website
+    spec:
+      containers:
+      - name: website
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: website-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: website-content
+        configMap:
+          name: website-content
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: website-content
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>My k3s Website</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #2c3e50; }
+        </style>
+    </head>
+    <body>
+        <h1>🚀 Hello from k3s on Raspberry Pi!</h1>
+        <p>This website is running on my k3s cluster!</p>
+        <p>Pod: {{ .Env.HOSTNAME }}</p>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-website-service
+spec:
+  selector:
+    app: my-website
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer

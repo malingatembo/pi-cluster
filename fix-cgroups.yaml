@@ -1,0 +1,30 @@
+---
+- name: Enable cgroups for Kubernetes on Raspberry Pi
+  hosts: pi_cluster
+  become: yes
+  tasks:
+    - name: Backup current cmdline.txt
+      copy:
+        src: /boot/firmware/cmdline.txt
+        dest: /boot/firmware/cmdline.txt.backup
+        remote_src: yes
+
+    - name: Enable cgroups in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        regexp: '^((?!cgroup).)*$'
+        line: '{{ ansible_facts.cmdline | default("") }} cgroup_memory=1 cgroup_enable=memory'
+        backrefs: yes
+
+    - name: Display new cmdline
+      shell: cat /boot/firmware/cmdline.txt
+      register: new_cmdline
+
+    - name: Show new configuration
+      debug:
+        msg: "New cmdline: {{ new_cmdline.stdout }}"
+
+    - name: Reboot to apply changes
+      reboot:
+        msg: "Rebooting to enable cgroups for k3s"
+        reboot_timeout: 300

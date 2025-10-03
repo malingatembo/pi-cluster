@@ -2,17 +2,18 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: shuma-website
+  name: shuma-sage
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: shuma-website
-  namespace: shuma-website
+  name: shuma-sage-website
+  namespace: shuma-sage
   labels:
-    app: shuma-website
+    app: shuma-sage-website
     tier: frontend
+    theme: sage-gold
 spec:
   replicas: 3
   strategy:
@@ -22,16 +23,17 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: shuma-website
+      app: shuma-sage-website
   template:
     metadata:
       labels:
-        app: shuma-website
+        app: shuma-sage-website
         tier: frontend
+        theme: sage-gold
     spec:
       containers:
       - name: nginx
-        image: shuma-website:latest
+        image: shuma-sage-gold:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 80
@@ -70,21 +72,21 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - shuma-website
+                  - shuma-sage-website
               topologyKey: kubernetes.io/hostname
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: shuma-website-service
-  namespace: shuma-website
+  name: shuma-sage-service
+  namespace: shuma-sage
   labels:
-    app: shuma-website
+    app: shuma-sage-website
 spec:
   type: LoadBalancer
   selector:
-    app: shuma-website
+    app: shuma-sage-website
   ports:
   - protocol: TCP
     port: 80
@@ -99,18 +101,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: shuma-website-nodeport
-  namespace: shuma-website
+  name: shuma-sage-nodeport
+  namespace: shuma-sage
   labels:
-    app: shuma-website
+    app: shuma-sage-website
 spec:
   type: NodePort
   selector:
-    app: shuma-website
+    app: shuma-sage-website
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-    nodePort: 30080
+    nodePort: 30081
     name: http
-
