@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shuma Admin Panel - Booking Management</title>
+    <style>
+        :root {
+            --burgundy: #8B0000;
+            --navy: #001F3F;
+            --gold: #D4AF37;
+            --cream: #F5F5F5;
+            --white: #FFFFFF;
+            --gray: #999999;
+            --gray-dark: #333333;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+            color: var(--gray-dark);
+        }
+
+        /* Login Page */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--burgundy) 100%);
+        }
+
+        .login-box {
+            background: var(--white);
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            color: var(--burgundy);
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .login-box p {
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--navy);
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--cream);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--burgundy);
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--burgundy) 0%, #660000 100%);
+            color: var(--white);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(139, 0, 0, 0.3);
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .navbar {
+            background: var(--navy);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar h1 {
+            color: var(--gold);
+            font-size: 1.5rem;
+        }
+
+        .navbar .user-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-logout:hover {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: var(--gray);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--burgundy);
+        }
+
+        /* Filters */
+        .filters {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filters select {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--cream);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        /* Bookings Table */
+        .bookings-container {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .bookings-header {
+            padding: 1.5rem;
+            border-bottom: 2px solid var(--cream);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bookings-header h2 {
+            color: var(--navy);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--cream);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--navy);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--cream);
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: var(--white);
+        }
+
+        .no-bookings {
+            padding: 3rem;
+            text-align: center;
+            color: var(--gray);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+
+        .loading::after {
+            content: '...';
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>Shuma Admin</h1>
+            <p>Booking Management System</p>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <nav class="navbar">
+            <h1>SHUMA Admin Panel</h1>
+            <div class="user-info">
+                <span id="adminUsername"></span>
+                <button class="btn btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Bookings</h3>
+                    <div class="value" id="statTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending</h3>
+                    <div class="value" id="statPending">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Confirmed</h3>
+                    <div class="value" id="statConfirmed">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Last 7 Days</h3>
+                    <div class="value" id="statWeek">0</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="filterStatus" onchange="loadBookings()">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <select id="filterDate" onchange="loadBookings()">
+                    <option value="">All Dates</option>
+                </select>
+            </div>
+
+            <!-- Bookings Table -->
+            <div class="bookings-container">
+                <div class="bookings-header">
+                    <h2>Bookings</h2>
+                    <button class="btn btn-primary btn-sm" onclick="loadBookings()">Refresh</button>
+                </div>
+                <div id="bookingsTableContainer">
+                    <div class="loading">Loading bookings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/booking-api';
+        let authToken = localStorage.getItem('authToken');
+
+        // Check if already logged in
+        if (authToken) {
+            showDashboard();
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('username', data.user.username);
+                    showDashboard();
+                } else {
+                    showError(data.error || 'Login failed');
+                }
+            } catch (error) {
+                showError('Connection error. Please check if API is running.');
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('adminUsername').textContent = localStorage.getItem('username');
+            loadStats();
+            loadBookings();
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('username');
+            location.reload();
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('statTotal').textContent = stats.total_bookings;
+                    document.getElementById('statPending').textContent = stats.pending;
+                    document.getElementById('statConfirmed').textContent = stats.confirmed;
+                    document.getElementById('statWeek').textContent = stats.last_7_days;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadBookings() {
+            const status = document.getElementById('filterStatus').value;
+            const date = document.getElementById('filterDate').value;
+
+            let url = `${API_URL}/api/admin/bookings?`;
+            if (status) url += `status=${status}&`;
+            if (date) url += `date=${date}&`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    displayBookings(data.bookings);
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('bookingsTableContainer').innerHTML =
+                    '<div class="no-bookings">Error loading bookings</div>';
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsTableContainer');
+
+            if (bookings.length === 0) {
+                container.innerHTML = '<div class="no-bookings">No bookings found</div>';
+                return;
+            }
+
+            const table = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Service</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bookings.map(booking => `
+                            <tr>
+                                <td>${booking.id}</td>
+                                <td>${booking.name}</td>
+                                <td>${booking.email}</td>
+                                <td>${booking.phone}</td>
+                                <td>${booking.service} (${booking.duration}min)</td>
+                                <td>${formatDate(booking.preferred_date)} ${booking.preferred_time}</td>
+                                <td><span class="badge badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        ${booking.status === 'pending' ?
+                                            `<button class="btn btn-success btn-sm" onclick="updateStatus(${booking.id}, 'confirmed')">Confirm</button>` : ''}
+                                        ${booking.status === 'confirmed' ?
+                                            `<button class="btn btn-info btn-sm" onclick="updateStatus(${booking.id}, 'completed')">Complete</button>` : ''}
+                                        <button class="btn btn-danger btn-sm" onclick="updateStatus(${booking.id}, 'cancelled')">Cancel</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = table;
+        }
+
+        async function updateStatus(id, status) {
+            if (!confirm(`Are you sure you want to mark this booking as ${status}?`)) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/bookings/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadStats();
+                    loadBookings();
+                }
+            } catch (error) {
+                alert('Error updating booking status');
+            }
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('cs-CZ');
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (authToken) {
+                loadStats();
+                loadBookings();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
