@@ -1,0 +1,128 @@
+---
+# Production-ready Ingress for Shuma Executive Massage Parlor
+# With SSL/TLS, security headers, and rate limiting
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shuma-website
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: shuma-website
+spec:
+  headers:
+    # Security Headers
+    frameDeny: true
+    browserXssFilter: true
+    contentTypeNosniff: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 31536000
+    customFrameOptionsValue: "SAMEORIGIN"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+      X-Content-Type-Options: "nosniff"
+      X-XSS-Protection: "1; mode=block"
+      Referrer-Policy: "strict-origin-when-cross-origin"
+      Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+    # Content Security Policy
+    contentSecurityPolicy: |
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+      font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+      img-src 'self' data: https:;
+      connect-src 'self';
+      frame-ancestors 'self';
+      base-uri 'self';
+      form-action 'self';
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  namespace: shuma-website
+spec:
+  rateLimit:
+    average: 100
+    burst: 50
+    period: 1m
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: compress
+  namespace: shuma-website
+spec:
+  compress: {}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: shuma-website
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+
+---
+# Main Ingress - HTTP to HTTPS redirect
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shuma-website-http
+  namespace: shuma-website
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: shuma-website-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: shuma.local  # CHANGE THIS to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: shuma-website-service
+            port:
+              number: 80
+
+---
+# Main Ingress - HTTPS with SSL/TLS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shuma-website-https
+  namespace: shuma-website
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # Use letsencrypt-staging for testing first
+    traefik.ingress.kubernetes.io/router.middlewares: shuma-website-security-headers@kubernetescrd,shuma-website-rate-limit@kubernetescrd,shuma-website-compress@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - shuma.local  # CHANGE THIS to your domain
+    secretName: shuma-tls-cert
+  rules:
+  - host: shuma.local  # CHANGE THIS to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: shuma-website-service
+            port:
+              number: 80
