@@ -517,6 +517,23 @@ img {
     z-index: 1;
 }
 
+/* Professional therapist photo styling */
+.therapist-photo {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4/5;
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-medium);
+}
+
+.therapist-photo:hover {
+    transform: scale(1.02);
+    box-shadow: 0 12px 40px rgba(139, 0, 0, 0.3);
+}
+
 /* ===================================
    Services Section
    =================================== */
